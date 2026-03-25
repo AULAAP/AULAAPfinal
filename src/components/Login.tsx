@@ -83,6 +83,11 @@ export default function Login({ error: externalError }: { error?: string | null 
     setError('');
     try {
       console.log('Starting Google auth...');
+      console.log('Auth instance:', auth);
+      console.log('Google Provider:', googleProvider);
+      if (!auth || !googleProvider) {
+        throw new Error('Firebase Auth o Google Provider no están inicializados correctamente.');
+      }
       await signInWithPopup(auth, googleProvider);
       console.log('Google auth successful');
     } catch (err: any) {

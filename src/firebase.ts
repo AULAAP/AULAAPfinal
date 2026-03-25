@@ -6,8 +6,8 @@ import {
   signOut, 
   onAuthStateChanged, 
   User as FirebaseUser,
-  initializeAuth,
-  browserSessionPersistence
+  browserSessionPersistence,
+  setPersistence
 } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, onSnapshot, getDocFromServer, DocumentReference, CollectionReference, Query } from 'firebase/firestore';
 import firebaseConfigJson from '../firebase-applet-config.json';
@@ -32,12 +32,20 @@ const firebaseConfig = {
   firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || firebaseConfigJson.firestoreDatabaseId
 };
 
+// Validate config
+if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes('TODO')) {
+  console.warn('Firebase API Key is missing or invalid. Check your environment variables or firebase-applet-config.json');
+}
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Use browserSessionPersistence for better compatibility in some iframe scenarios
-export const auth = initializeAuth(app, {
-  persistence: browserSessionPersistence
+// Get Auth instance
+export const auth = getAuth(app);
+
+// Set persistence
+setPersistence(auth, browserSessionPersistence).catch(err => {
+  console.error('Error setting persistence:', err);
 });
 
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
