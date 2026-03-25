@@ -1,0 +1,170 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields: uid, username, email, role, churchId, mustChangePassword
+    //
+    // Collection: approved_emails
+    // Fields: email, name, churchId, role
+    //
+    // Collection: classes
+    // Fields: id, name, schedule, ownerId, churchId
+    //
+    // Collection: beneficiaries
+    // Fields: id, name, age, gender, projectCode, status, registrationDate, section, ownerId, churchId
+    //
+    // Collection: attendance
+    // Fields: classId, date, records, ownerId, churchId
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.ownerId;
+    }
+    
+    function isNewDocOwner() {
+      return isAuthenticated() && request.auth.uid == request.resource.data.ownerId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isChurchMember(churchId) {
+      return isAuthenticated() && 
+             (isAdmin() || 
+              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.churchId == churchId));
+    }
+
+    function isMasterAdmin() {
+      return isAuthenticated() && 
+             (request.auth.token.email == "ramonalduey@gmail.com" || 
+              request.auth.token.email == "ramonalduey01@gmail.com");
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+             (isMasterAdmin() || 
+              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.uid == request.auth.uid &&
+             data.username is string && data.username.size() > 0 && data.username.size() < 100 &&
+             data.role in ['admin', 'tutor', 'user'] &&
+             data.churchId is string;
+    }
+
+    function isApprovedRole(email, role) {
+      return exists(/databases/$(database)/documents/approved_emails/$(email)) &&
+             get(/databases/$(database)/documents/approved_emails/$(email)).data.role == role;
+    }
+
+    function isValidClass(data) {
+      return data.keys().hasAll(['name', 'schedule', 'ownerId', 'churchId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.ownerId == request.auth.uid &&
+             data.churchId is string;
+    }
+
+    function isValidBeneficiary(data) {
+      return data.keys().hasAll(['name', 'age', 'gender', 'status', 'ownerId', 'churchId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.age is int && data.age >= 0 && data.age < 100 &&
+             data.gender in ['M', 'F'] &&
+             data.status in ['Active', 'Inactive'] &&
+             data.ownerId == request.auth.uid &&
+             data.churchId is string &&
+             (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() < 1048576));
+    }
+
+    function isValidAttendance(data) {
+      return data.keys().hasAll(['classId', 'date', 'records', 'ownerId', 'churchId']) &&
+             data.classId is string &&
+             data.date is string &&
+             data.records is map &&
+             data.ownerId == request.auth.uid &&
+             data.churchId is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
+                    (request.resource.data.role == resource.data.role || 
+                     isMasterAdmin() || 
+                     isApprovedRole(request.auth.token.email, request.resource.data.role));
+    }
+
+    function isValidApprovedEmail(data) {
+      return data.keys().hasAll(['email', 'name', 'churchId', 'role']) &&
+             data.email is string && isValidEmail(data.email) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.churchId is string && data.churchId.size() > 0 &&
+             data.role in ['admin', 'tutor'];
+    }
+
+    match /approved_emails/{emailId} {
+      allow read: if isAuthenticated(); // Needed to check approval during login
+      allow write: if isAdmin() && isValidApprovedEmail(request.resource.data);
+    }
+
+    match /classes/{classId} {
+      allow read: if isChurchMember(resource.data.churchId);
+      allow create: if isNewDocOwner() && isValidClass(request.resource.data) && isChurchMember(request.resource.data.churchId);
+      allow update: if isDocOwner() && isNewDocOwner() && isValidClass(request.resource.data) && isChurchMember(request.resource.data.churchId);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /beneficiaries/{beneficiaryId} {
+      allow read: if isChurchMember(resource.data.churchId);
+      allow create: if isNewDocOwner() && isValidBeneficiary(request.resource.data) && isChurchMember(request.resource.data.churchId);
+      allow update: if isDocOwner() && isNewDocOwner() && isValidBeneficiary(request.resource.data) && isChurchMember(request.resource.data.churchId);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /attendance/{recordId} {
+      allow read: if isChurchMember(resource.data.churchId);
+      allow create, update: if isNewDocOwner() && isValidAttendance(request.resource.data) && isChurchMember(request.resource.data.churchId);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    // Default deny
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

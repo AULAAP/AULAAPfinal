@@ -1,0 +1,7 @@
+{
+  "name": "AULAPP 1.0",
+  "description": "Sistema de gestión para tutores y beneficiarios de proyectos sociales.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

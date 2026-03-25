@@ -1,0 +1,87 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Information about the tutor.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "username": { "type": "string", "description": "Display name" },
+        "email": { "type": "string", "description": "Email address" },
+        "role": { "type": "string", "enum": ["admin", "tutor"], "description": "User role" },
+        "churchId": { "type": "string", "description": "ID of the church the user belongs to" }
+      },
+      "required": ["uid", "username", "email", "role", "churchId"]
+    },
+    "ApprovedEmail": {
+      "title": "Approved Email",
+      "description": "Whitelist of emails allowed to register.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "churchId": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "tutor"] }
+      },
+      "required": ["email", "name", "churchId", "role"]
+    },
+    "Class": {
+      "title": "Class",
+      "description": "A group or section managed by a tutor.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "tutorName": { "type": "string" },
+        "schedule": {
+          "type": "object",
+          "properties": {
+            "days": { "type": "array", "items": { "type": "integer" } },
+            "time": { "type": "string" }
+          }
+        },
+        "ownerId": { "type": "string", "description": "UID of the tutor who created it" },
+        "churchId": { "type": "string", "description": "ID of the church this class belongs to" }
+      },
+      "required": ["id", "name", "schedule", "ownerId", "churchId"]
+    },
+    "Beneficiary": {
+      "title": "Beneficiary",
+      "description": "A student in the system.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "age": { "type": "integer" },
+        "gender": { "type": "string", "enum": ["M", "F"] },
+        "projectCode": { "type": "string" },
+        "status": { "type": "string", "enum": ["Active", "Inactive"] },
+        "registrationDate": { "type": "string", "format": "date" },
+        "section": { "type": "string", "description": "Name of the class they belong to" },
+        "ownerId": { "type": "string", "description": "UID of the tutor who manages them" },
+        "churchId": { "type": "string", "description": "ID of the church this student belongs to" }
+      },
+      "required": ["id", "name", "age", "gender", "status", "ownerId", "churchId"]
+    },
+    "AttendanceRecord": {
+      "title": "Attendance Record",
+      "description": "Attendance data for a specific class and date.",
+      "type": "object",
+      "properties": {
+        "classId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "records": { "type": "object", "description": "Map of beneficiaryId to boolean (present/absent)" },
+        "ownerId": { "type": "string" },
+        "churchId": { "type": "string" }
+      },
+      "required": ["classId", "date", "records", "ownerId", "churchId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "Tutor profiles" },
+    "/approved_emails/{emailId}": { "schema": "ApprovedEmail", "description": "Whitelisted emails" },
+    "/classes/{classId}": { "schema": "Class", "description": "Classes managed by tutores" },
+    "/beneficiaries/{beneficiaryId}": { "schema": "Beneficiary", "description": "Students managed by tutores" },
+    "/attendance/{recordId}": { "schema": "AttendanceRecord", "description": "Attendance history" }
+  }
+}
