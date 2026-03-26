@@ -139,7 +139,7 @@ export default function Dashboard({ user }: DashboardProps) {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-primary p-8 md:p-12 rounded-[3rem] text-white shadow-2xl shadow-blue-200 relative overflow-hidden"
+        className="bg-[#075985] p-8 md:p-12 rounded-[3rem] text-white shadow-2xl shadow-sky-100 relative overflow-hidden"
       >
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div className="space-y-4">
@@ -259,10 +259,10 @@ export default function Dashboard({ user }: DashboardProps) {
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-secondary card-rounded p-10 text-white shadow-2xl shadow-amber-100 flex flex-col justify-between relative overflow-hidden">
+        <div className="bg-[#92400E] card-rounded p-10 text-white shadow-2xl shadow-amber-50 flex flex-col justify-between relative overflow-hidden">
           <div className="relative z-10">
             <h3 className="text-3xl font-black italic mb-4 tracking-tight">ACCIONES RÁPIDAS</h3>
-            <p className="text-amber-100 font-bold text-lg mb-8">Gestiona tus clases de forma divertida.</p>
+            <p className="text-amber-100/80 font-bold text-lg mb-8">Gestiona tus clases de forma divertida.</p>
           </div>
           <div className="space-y-4 relative z-10">
             {[

@@ -9,6 +9,7 @@ import Reports from './components/Reports';
 import AdminPanel from './components/AdminPanel';
 import Layout from './components/Layout';
 import LandingPage from './components/LandingPage';
+import ErrorBoundary from './components/ErrorBoundary';
 import { User } from './types';
 import { auth, db, handleFirestoreError, OperationType } from './firebase';
 import { onAuthStateChanged, signOut, setPersistence, inMemoryPersistence } from 'firebase/auth';
@@ -34,6 +35,9 @@ export default function App() {
             where('email', '==', firebaseUser.email)
           );
           const approvedSnapshot = await getDocs(approvedQuery);
+          if (!approvedSnapshot) {
+            handleFirestoreError(new Error('No se pudo obtener la información de aprobación'), OperationType.GET, 'approved_emails');
+          }
 
           const masterAdmins = ['ramonalduey@gmail.com', 'ramonalduey01@gmail.com'];
           const userEmail = firebaseUser.email || '';
@@ -56,6 +60,9 @@ export default function App() {
 
           console.log('Fetching user profile...');
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (!userDoc) {
+            handleFirestoreError(new Error('No se pudo obtener el perfil del usuario'), OperationType.GET, `users/${firebaseUser.uid}`);
+          }
           const authDisplayName = firebaseUser.displayName;
           
           if (userDoc.exists()) {
@@ -140,8 +147,9 @@ export default function App() {
   if (loading) return <div className="flex items-center justify-center h-screen">Cargando...</div>;
 
   return (
-    <Router>
-      <Routes>
+    <ErrorBoundary>
+      <Router>
+        <Routes>
         <Route 
           path="/" 
           element={<LandingPage user={user} />} 
@@ -168,5 +176,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
+    </ErrorBoundary>
   );
 }

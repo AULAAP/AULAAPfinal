@@ -9,7 +9,8 @@
         "username": { "type": "string", "description": "Display name" },
         "email": { "type": "string", "description": "Email address" },
         "role": { "type": "string", "enum": ["admin", "tutor"], "description": "User role" },
-        "churchId": { "type": "string", "description": "ID of the church the user belongs to" }
+        "churchId": { "type": "string", "description": "ID of the church the user belongs to" },
+        "mustChangePassword": { "type": "boolean", "description": "Flag to force password change" }
       },
       "required": ["uid", "username", "email", "role", "churchId"]
     },
